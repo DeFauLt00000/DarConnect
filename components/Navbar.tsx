@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
+import { handleAuthError } from '@/lib/auth-utils';
 import type { User } from '@supabase/supabase-js';
 import { Menu, X, MapPin, Home, Calendar, User as UserIcon, LogOut, LayoutDashboard, CalendarCheck } from 'lucide-react';
 
@@ -28,18 +29,22 @@ export default function Navbar() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
+      try {
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
 
-        setUserRole(profile?.role || 'tenant');
-      } else {
-        setUserRole(null);
+          setUserRole(profile?.role || 'tenant');
+        } else {
+          setUserRole(null);
+        }
+      } catch (error) {
+        handleAuthError(error);
       }
     });
 

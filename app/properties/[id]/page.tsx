@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import Image from 'next/image';
-import { MapPin, Bed, Bath, Maximize, Calendar, User, CheckCircle } from 'lucide-react';
+import { MapPin, Bed, Bath, Maximize, Calendar, User, CheckCircle, Edit } from 'lucide-react';
 
 export default async function PropertyDetailPage({
   params,
@@ -10,6 +10,10 @@ export default async function PropertyDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: property } = await supabase
     .from('properties')
@@ -20,6 +24,8 @@ export default async function PropertyDetailPage({
   if (!property) {
     redirect('/properties');
   }
+
+  const isOwner = user && property.owner_id === user.id;
 
   const { data: images } = await supabase
     .from('property_images')
@@ -99,9 +105,16 @@ export default async function PropertyDetailPage({
             )}
 
             <div className="mb-8">
-              <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-[#f0f0f0]">
-                {property.title}
-              </h1>
+              <div className="flex items-center gap-3 mb-4">
+                <h1 className="text-3xl lg:text-4xl font-bold text-[#f0f0f0]">
+                  {property.title}
+                </h1>
+                {isOwner && (
+                  <span className="px-3 py-1 rounded-full text-xs font-medium border border-[#c8a96e] text-[#c8a96e]">
+                    Votre annonce
+                  </span>
+                )}
+              </div>
 
               <div className="flex items-center gap-2 text-[#8b8fa8] mb-6">
                 <MapPin className="w-5 h-5 text-[#c8a96e]" />
@@ -173,12 +186,22 @@ export default async function PropertyDetailPage({
                   </p>
                 </div>
 
-                <a
-                  href={`/visits/new?property_id=${property.id}`}
-                  className="block w-full bg-[#c8a96e] text-[#08090a] font-semibold py-3 rounded-xl hover:bg-[#d4b87a] transition-all text-center mb-6"
-                >
-                  Réserver une visite
-                </a>
+                {isOwner ? (
+                  <a
+                    href={`/sell/edit/${property.id}`}
+                    className="block w-full bg-[#c8a96e] text-[#08090a] font-semibold py-3 rounded-xl hover:bg-[#d4b87a] transition-all text-center mb-6 flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-5 h-5" />
+                    Gérer cette annonce
+                  </a>
+                ) : (
+                  <a
+                    href={`/visits/new?property_id=${property.id}`}
+                    className="block w-full bg-[#c8a96e] text-[#08090a] font-semibold py-3 rounded-xl hover:bg-[#d4b87a] transition-all text-center mb-6"
+                  >
+                    Réserver une visite
+                  </a>
+                )}
 
                 <div className="border-t border-[rgba(255,255,255,0.08)] pt-6">
                   <h3 className="text-lg font-semibold mb-4 text-[#f0f0f0]">

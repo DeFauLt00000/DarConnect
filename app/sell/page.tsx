@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import Link from 'next/link';
-import { Plus, Home, TrendingUp, Shield, Zap, CheckCircle, ArrowRight } from 'lucide-react';
+import { Plus, Home, TrendingUp, Shield, Zap, CheckCircle, ArrowRight, CalendarCheck } from 'lucide-react';
 
 export default async function SellPage() {
   const supabase = await createClient();
@@ -90,6 +90,21 @@ export default async function SellPage() {
     images: property.property_images || [],
   })) || [];
 
+  const { data: visits } = await supabase
+    .from('visits')
+    .select('status')
+    .eq('tenant_id', user.id);
+
+  const { data: sellerVisits } = await supabase
+    .from('visits')
+    .select('status')
+    .in(
+      'property_id',
+      properties?.map((p) => p.id) || []
+    );
+
+  const pendingVisitsCount = sellerVisits?.filter((v) => v.status === 'pending').length || 0;
+
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -103,12 +118,25 @@ export default async function SellPage() {
             </p>
           </div>
 
-          <Link href="/sell/new">
-            <button className="bg-[#c8a96e] text-[#08090a] font-semibold px-6 py-3 rounded-xl hover:bg-[#d4b87a] transition-all flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              Ajouter une annonce
-            </button>
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/sell/visits">
+              <button className="bg-[#111318] border border-[rgba(255,255,255,0.12)] text-[#f0f0f0] font-semibold px-6 py-3 rounded-xl hover:border-[#c8a96e] hover:text-[#c8a96e] transition-all flex items-center gap-2">
+                <CalendarCheck className="w-5 h-5" />
+                Demandes de visite
+                {pendingVisitsCount > 0 && (
+                  <span className="bg-[#f59e0b] text-[#08090a] text-xs px-2 py-0.5 rounded-full">
+                    {pendingVisitsCount}
+                  </span>
+                )}
+              </button>
+            </Link>
+            <Link href="/sell/new">
+              <button className="bg-[#c8a96e] text-[#08090a] font-semibold px-6 py-3 rounded-xl hover:bg-[#d4b87a] transition-all flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                Ajouter une annonce
+              </button>
+            </Link>
+          </div>
         </div>
 
         {propertiesWithImages.length > 0 ? (

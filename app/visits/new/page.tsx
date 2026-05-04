@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import FileUpload from '@/components/FileUpload';
-import { Loader2, CheckCircle, Calendar, Home } from 'lucide-react';
+import { Loader2, CheckCircle, Calendar, Home, AlertCircle, Edit } from 'lucide-react';
 
 function NewVisitContent() {
   const searchParams = useSearchParams();
@@ -14,6 +14,7 @@ function NewVisitContent() {
   const supabase = createClient();
 
   const [property, setProperty] = useState<any>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [visitDate, setVisitDate] = useState('');
   const [idScanFile, setIdScanFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,14 +29,22 @@ function NewVisitContent() {
   }, [propertyId]);
 
   const fetchProperty = async () => {
-    const { data, error } = await supabase
+    const { data: propertyData, error } = await supabase
       .from('properties')
       .select('*')
       .eq('id', propertyId)
       .single();
 
-    if (data && !error) {
-      setProperty(data);
+    if (propertyData && !error) {
+      setProperty(propertyData);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user && propertyData.owner_id === user.id) {
+        setIsOwner(true);
+      }
     }
   };
 
@@ -178,7 +187,31 @@ function NewVisitContent() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {isOwner ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#111318] border border-[rgba(200,169,110,0.3)] rounded-2xl p-8 text-center"
+          >
+            <div className="w-16 h-16 rounded-full bg-[rgba(200,169,110,0.15)] flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-8 h-8 text-[#c8a96e]" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4 text-[#f0f0f0]">
+              Vous ne pouvez pas réserver une visite pour votre propre bien
+            </h2>
+            <p className="text-[#8b8fa8] mb-6">
+              En tant que propriétaire, vous pouvez gérer cette annonce et voir les demandes de visite des locataires.
+            </p>
+            <a
+              href={`/sell/edit/${propertyId}`}
+              className="inline-flex items-center gap-2 bg-[#c8a96e] text-[#08090a] font-semibold px-6 py-3 rounded-xl hover:bg-[#d4b87a] transition-all"
+            >
+              <Edit className="w-5 h-5" />
+              Gérer cette annonce
+            </a>
+          </motion.div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-[#f0f0f0] mb-2">
               Date de visite
@@ -245,6 +278,7 @@ function NewVisitContent() {
             )}
           </motion.button>
         </form>
+        )}
       </div>
     </div>
   );

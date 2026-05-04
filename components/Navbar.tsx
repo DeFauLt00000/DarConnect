@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import type { User } from '@supabase/supabase-js';
-import { Menu, X, MapPin, Home, Calendar, User as UserIcon, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, MapPin, Home, Calendar, User as UserIcon, LogOut, LayoutDashboard, CalendarCheck } from 'lucide-react';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<'tenant' | 'seller' | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const supabase = createClient();
 
@@ -26,8 +27,20 @@ export default function Navbar() {
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        setUserRole(profile?.role || 'tenant');
+      } else {
+        setUserRole(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -139,6 +152,16 @@ export default function Navbar() {
                           <LayoutDashboard className="w-4 h-4 text-[#c8a96e]" />
                           <span>Mon tableau de bord</span>
                         </Link>
+                        {userRole === 'seller' && (
+                          <Link
+                            href="/sell/visits"
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-[rgba(200,169,110,0.1)] transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <CalendarCheck className="w-4 h-4 text-[#c8a96e]" />
+                            <span>Mes réservations</span>
+                          </Link>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[rgba(239,68,68,0.1)] transition-colors text-left"
@@ -221,6 +244,15 @@ export default function Navbar() {
                   >
                     Mon tableau de bord
                   </Link>
+                  {userRole === 'seller' && (
+                    <Link
+                      href="/sell/visits"
+                      className="text-2xl text-[#f0f0f0] hover:text-[#c8a96e] transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Mes réservations
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="text-2xl text-[#ef4444] hover:text-[#dc2626] transition-colors"

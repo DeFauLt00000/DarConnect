@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -54,6 +55,7 @@ export default function RegisterPage() {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -69,8 +71,16 @@ export default function RegisterPage() {
           role: 'tenant',
         });
 
-        router.push('/dashboard');
-        router.refresh();
+        // Check if email confirmation is required
+        if (!data.user.email_confirmed_at && data.user.identities?.length === 0) {
+          // Email confirmation required
+          setSuccess(true);
+          setError('Veuillez confirmer votre email avant de vous connecter. Un lien de confirmation a été envoyé à votre adresse email.');
+        } else {
+          // Auto-login (email confirmation not required)
+          router.push('/profile');
+          router.refresh();
+        }
       }
     } catch (err) {
       setError('Une erreur est survenue');
@@ -203,6 +213,17 @@ export default function RegisterPage() {
                   )}
                 </motion.button>
               </form>
+
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.3)] text-[#22c55e] px-4 py-3 rounded-xl flex items-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  <span>Compte créé avec succès ! Veuillez confirmer votre email.</span>
+                </motion.div>
+              )}
 
               <p className="text-center mt-8 text-[#8b8fa8]">
                 Déjà inscrit ?{' '}

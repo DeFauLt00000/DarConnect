@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +32,9 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/profile');
+      // Get redirect URL from search params or default to profile
+      const redirectUrl = searchParams.get('redirect') || '/profile';
+      router.push(redirectUrl);
       router.refresh();
     } catch (err) {
       setError('Une erreur est survenue');
@@ -169,5 +172,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#08090a]"><Loader2 className="w-8 h-8 text-[#c8a96e] animate-spin" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

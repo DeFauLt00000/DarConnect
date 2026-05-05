@@ -20,27 +20,41 @@ export default function PropertiesPage() {
 
   const fetchProperties = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('properties')
-      .select(`
-        *,
-        property_images (
-          id,
-          image_url,
-          display_order
-        )
-      `)
-      .eq('is_available', true)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          property_images (
+            id,
+            image_url,
+            display_order
+          )
+        `)
+        .eq('is_available', true)
+        .order('created_at', { ascending: false });
 
-    if (data && !error) {
-      const propertiesWithImages = data.map((property) => ({
-        ...property,
-        images: property.property_images || [],
-      }));
-      setProperties(propertiesWithImages);
+      if (error) {
+        console.error('Error fetching properties:', error);
+        setProperties([]);
+        return;
+      }
+
+      if (data) {
+        const propertiesWithImages = data.map((property) => ({
+          ...property,
+          images: property.property_images || [],
+        }));
+        setProperties(propertiesWithImages);
+      } else {
+        setProperties([]);
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching properties:', error);
+      setProperties([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const filteredProperties = properties.filter((property) => {

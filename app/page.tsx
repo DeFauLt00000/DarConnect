@@ -19,26 +19,35 @@ export default function HomePage() {
   }, []);
 
   const fetchFeaturedProperties = async () => {
-    const { data, error } = await supabase
-      .from('properties')
-      .select(`
-        *,
-        property_images (
-          id,
-          image_url,
-          display_order
-        )
-      `)
-      .eq('is_available', true)
-      .limit(6)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          property_images (
+            id,
+            image_url,
+            display_order
+          )
+        `)
+        .eq('is_available', true)
+        .limit(6)
+        .order('created_at', { ascending: false });
 
-    if (data && !error) {
-      const propertiesWithImages = data.map((property) => ({
-        ...property,
-        images: property.property_images || [],
-      }));
-      setFeaturedProperties(propertiesWithImages);
+      if (error) {
+        console.error('Error fetching properties:', error);
+        return;
+      }
+
+      if (data) {
+        const propertiesWithImages = data.map((property) => ({
+          ...property,
+          images: property.property_images || [],
+        }));
+        setFeaturedProperties(propertiesWithImages);
+      }
+    } catch (error) {
+      console.error('Unexpected error fetching properties:', error);
     }
   };
 

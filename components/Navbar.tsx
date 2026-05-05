@@ -52,8 +52,21 @@ export default function Navbar() {
   }, [supabase]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUserMenuOpen(false);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole(null);
+      setUserMenuOpen(false);
+      // Force a page reload to clear any cached state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, try to clear local state
+      setUser(null);
+      setUserRole(null);
+      setUserMenuOpen(false);
+      window.location.href = '/';
+    }
   };
 
   const navLinks = [

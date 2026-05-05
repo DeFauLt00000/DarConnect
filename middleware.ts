@@ -37,12 +37,16 @@ export async function middleware(request: NextRequest) {
     );
 
     if (isProtectedPath && !user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
     return response;
   } catch (error) {
     console.error('Middleware error:', error);
+    // If middleware fails, allow the request to proceed
+    // This prevents the app from breaking due to auth issues
     return response;
   }
 }
